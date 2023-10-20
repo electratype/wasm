@@ -1,0 +1,21 @@
+[package]
+name = "electratype"
+version = "0.1.0"
+edition = "2021"
+authors = ["VAGALIS, Karlis <karlis.vagalis@gmail.com>"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+getrandom = { version = "0.2", features = ["js"] }
+wasm-bindgen-futures = "0.4.37"
+console_error_panic_hook = "0.1.7"
+typst = { git = "https://github.com/typst/typst.git" }
+typst-library = { git = "https://github.com/typst/typst.git"}
+comemo = "0.3.0"
+chrono = "0.4.31"
+js-sys = "0.3.64"
+web-sys = { version = "0.3.64", features = ["Window", "Document", "Element"] }
+
