@@ -2,15 +2,16 @@
     To be able to compile input by Typst, one needs to provide implementation of 'World' trait defined in typst standard library.
 */
 
-use std::{mem, cell::OnceCell};
+use std::{mem, cell::OnceCell, path::Path, fs};
 
 use js_sys::{Array, ArrayBuffer};
 use wasm_bindgen::prelude::*;
-use typst::World;
+use typst::{World, doc::Frame, diag::FileError};
 
 use chrono::{Local, DateTime, TimeZone, FixedOffset, };
 
-use comemo::Prehashed;
+use comemo::{Prehashed, track};
+use web_sys::Blob;
 
 use crate::{ELEMENT_ID, log, log_string};
 
@@ -18,7 +19,8 @@ use typst::{
     eval::{Library, Bytes, Datetime},
     font::{FontBook, Font},
     syntax::{FileId, Source, PackageSpec},
-    diag::{FileResult}
+    diag::{FileResult},
+    util::hash128,
 };
 
 use typst_library::{
@@ -31,8 +33,9 @@ use crate::efs::*;
 struct FontSlot {
     buffer: Bytes,
     index: u32,
-    font: OnceCell<Option<Font>>,
+    font: OnceCell<Option<Font>>
 }
+
 
 #[wasm_bindgen]
 pub struct ElectraWorld {
@@ -40,6 +43,7 @@ pub struct ElectraWorld {
     book: Prehashed<FontBook>,
     fs: ElectraFileSystem,
     fonts: Vec<FontSlot>,
+    export_cache: ExportCache
 }
 
 #[wasm_bindgen]
@@ -51,7 +55,8 @@ impl ElectraWorld {
             library: Prehashed::new(typst_library::build()),
             book: Prehashed::new(FontBook::new()),
             fs: ElectraFileSystem::new(),
-            fonts: vec![]
+            fonts: vec![],
+            export_cache: ExportCache::new()
         }
     }
 
@@ -77,74 +82,15 @@ impl ElectraWorld {
         });
         self.book = Prehashed::new(book);
     }
+}
 
-    pub fn compile(&mut self) {
-
-        let window = web_sys::window().expect("no global `window` exists");
-        let document = window.document().expect("should have a document on window");
-        let element = document.get_element_by_id(ELEMENT_ID).unwrap();
-
-        log("Starting compiling");
-
-        let mut tracer = typst::eval::Tracer::new();
-        log("Tracer initialization successful");
-
-        let result = typst::compile(self, &mut tracer);
-
-        //log_string(format!("{:?}", world.source(typst::syntax::FileId::new(None, typst::syntax::VirtualPath::new(std::path::Path::new("main.typ")))).unwrap().text()));
-
-        match result {
-            Ok(result) => {
-
-                log_string(format!("Length {:?}", result.pages.len()));
-                log_string(format!("Document {:?}", result));
-
-                for frame in result.pages.iter() {
-
-                    log_string(format!("Page {:?}", frame));
-
-                    let svg = typst::export::svg(frame);
-                    
-                    log_string(svg.clone());
-
-                    element.set_inner_html(&svg);
-                }
-                log("Done rendering");
-
-                for v in tracer.values().iter() {
-
-                    log_string(v.clone().display().plain_text().to_string());
-
-                }
-
-            },
-            Err(error) => {
-                panic!("{:?}", error)
-            }
-        }
-
-        /*
-        match result {
-            Ok(document) => {
-                let fill = Color::WHITE;
-                let images = document
-                    .pages
-                    .into_iter()
-                    .map(|page| typst::export::render(&page, 144.0, fill))
-                    .map(|image| image.encode_png().expect("Could not encode as PNG"))
-                    .collect();
-                Ok(images)
-            }
-            Err(errors) => Err(errors
-                .into_iter()
-                .map(|error| JsValue::from_str(&error.message))
-                .collect::<Array>()
-                .into()),
-            }
-        */
+impl ElectraWorld {
+    pub fn export_cache(&mut self) -> &mut ExportCache {
+        &mut self.export_cache
     }
 }
 
+#[track]
 impl World for ElectraWorld {
 
     fn library(&self) -> &Prehashed<Library> {
@@ -197,4 +143,29 @@ impl World for ElectraWorld {
         
     }
 
+}
+
+pub struct ExportCache {
+    /// The hashes of last compilation's frames.
+    pub cache: Vec<u128>,
+}
+
+impl ExportCache {
+    /// Creates a new export cache.
+    pub fn new() -> Self {
+        Self { cache: Vec::with_capacity(32) }
+    }
+
+    /// Returns true if the entry is cached and appends the new hash to the
+    /// cache (for the next compilation).
+    pub fn is_cached(&mut self, i: usize, frame: &Frame) -> bool {
+        let hash = hash128(frame);
+
+        if i >= self.cache.len() {
+            self.cache.push(hash);
+            return false;
+        }
+
+        std::mem::replace(&mut self.cache[i], hash) == hash
+    }
 }

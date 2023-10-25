@@ -1,5 +1,5 @@
 [package]
-name = "electratype"
+name = "electratype-wasm"
 version = "0.1.0"
 edition = "2021"
 authors = ["VAGALIS, Karlis <karlis.vagalis@gmail.com>"]
@@ -17,5 +17,5 @@ typst-library = { git = "https://github.com/typst/typst.git"}
 comemo = "0.3.0"
 chrono = "0.4.31"
 js-sys = "0.3.64"
-web-sys = { version = "0.3.64", features = ["Window", "Document", "Element"] }
+web-sys = { version = "0.3.64", features = ["Window", "Document", "Element", "Blob", "BlobPropertyBag", "Url"] }
 

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use typst::{syntax::{VirtualPath, FileId, Source}, diag::FileResult, eval::Bytes};
+use wasm_bindgen::prelude::*;
 
 pub const FILE_NAME: &str = "main.typ";
 
@@ -25,6 +26,14 @@ impl ElectraFileSystem {
         }
     }
 
+    pub fn set_source(&mut self, source: String) {
+        self.file_source = Some(Source::new(self.file_id, source));
+    }
+    
+}
+
+impl ElectraFileSystem {
+
     pub fn file(&self, id: FileId) -> FileResult<Bytes> {
 
         let file_source = self.file_source.as_ref().unwrap();
@@ -37,9 +46,4 @@ impl ElectraFileSystem {
     pub fn source(&self) -> Source {
         self.file_source.clone().expect("File source has not been set!")
     }
-
-    pub fn set_source(&mut self, source: String) {
-        self.file_source = Some(Source::new(self.file_id, source));
-    }
-    
 }

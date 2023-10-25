@@ -1,11 +1,13 @@
+use comemo::{memoize, Tracked};
+use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use web_sys;
 use typst::{self, geom::Color, World};
-
-use js_sys::{Array};
+use world::ElectraWorld;
 
 mod world;
 mod efs;
+mod typst_interface;
 
 pub const ELEMENT_ID: &str = "compilation-output";
 
