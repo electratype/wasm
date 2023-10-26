@@ -27,6 +27,10 @@ impl Typst {
         self.world.set_source(text);
     }
 
+    pub fn edit_source(&mut self, start: usize, end: usize, with: String) {
+        self.world.edit_source(start, end, with);
+    }
+
     pub fn supply_fonts(&mut self, fonts: Array) {
         self.world.supply_fonts(fonts)
     }

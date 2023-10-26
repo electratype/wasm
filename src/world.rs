@@ -64,6 +64,10 @@ impl ElectraWorld {
         self.fs.set_source(text);
     }
 
+    pub fn edit_source(&mut self, start: usize, end: usize, with: String) {
+        self.fs.edit_source(start, end, with);
+    }
+
     pub fn supply_fonts(&mut self, fonts: Array) {
         let hashed_book = mem::replace(&mut self.book, Prehashed::default());
         let mut book: FontBook = hashed_book.into_inner();
