@@ -1,7 +1,9 @@
-use std::{path::Path, ops::Range};
+use std::{path::Path, ops::Range, fmt::format};
 
 use typst::{syntax::{VirtualPath, FileId, Source}, diag::FileResult, eval::Bytes};
 use wasm_bindgen::prelude::*;
+
+use crate::log_string;
 
 pub const FILE_NAME: &str = "main.typ";
 
@@ -38,7 +40,16 @@ impl ElectraFileSystem {
         let range = Range{start: start, end: end};
         let s: &str = &*with;
 
-        self.file_source.as_mut().unwrap().edit(range, s);
+        match self.file_source.as_mut() {
+            Some(source) => {
+                log_string(format!("{:?}", range));
+                log_string(format!("{:?}", s));
+                source.edit(range, s);
+            },
+            None => {
+
+            },
+        }
     }
     
 }
